@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <title>me</title>
+    <style>
+        body{
+            margin:0px;
+            height: 100vh !important;
+            background-color: rgb(91, 117, 126);
+        }
+        
+        svg{            
+            position: absolute;
+            top:50%;
+            left:50%;
+            transform: translate(-50%,-50%);
+        }
+
+        #label{
+            width: 200px;
+            height: 280px;
+            border:1px solid black;
+            position: fixed;
+            right:10px;
+            bottom:10px;
+            text-align: center;
+            border-radius: 10px;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div>
+        <h1 style="margin: 30px;">Singapore Population by districts</h1>
+    </div>     
+    <svg></svg>
+    <div id="label">
+        <p>Legend</p>    
+        <p style="color: #D98880;"> P≤10000</p>
+        <p style="color: #F1948A;"> P≤250000</p>
+        <p style="color: #DAF7A6;"> P≤50000</p>
+        <p style="color: #9FE2BF;"> P≤75000</p>
+        <p style="color: #00b4d8 ;"> P≤100000</p>
+        <p style="color: #0077b6;"> P≤125000</p>
+        <p style="color: #03045e ;"> P≥150000</p>
+        
+    </div>
+    
+            
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <script>
+        // Data and color scale
+        var numScale = [10000, 25000, 50000, 75000, 100000, 1250000, 150000];
+        const colorScale = d3.scaleThreshold()
+            .domain(numScale)
+            .range(['#DFFF00','#F1948A','#DAF7A6','#9FE2BF','#00b4d8','#0077b6','#03045e']);
+                        
+        let width = "80%", height = "80vh";
+
+        let svg = d3.select("svg")   
+            .attr('width',width)
+            .attr('height',height)
+            .attr('fill', 'black')
+            .attr("viewBox", "0 0 " + 1000 + " " + 600)
+
+        // Load external data and boot
+        Promise.all([
+            d3.json("https://raw.githubusercontent.com/zack0411/HASS-assignment4/main/sgmap.json"), 
+            d3.csv("https://raw.githubusercontent.com/zack0411/HASS-assignment4/main/population2021.csv")
+        ]).then(data => {
+
+            console.log(data[0]);
+            console.log(data[1]);
+
+            // object distinct and population objects
+            var popDict = {};
+            for(var i = 0; i < data[1].length ; i++){
+                popDict[data[1][i].Subzone.toUpperCase()] = Math.round(data[1][i].Population);
+            }
+
+            console.log(popDict);
+
+            // Map and projection
+            var projection = d3.geoMercator()
+                .center([103.851959, 1.290270])
+                .fitExtent([[20, 20], [980, 580]], data[0]);
+                
+
+            let geopath = d3.geoPath().projection(projection);
+
+            svg.append("path")
+                .datum({ type: "Sphere" })
+                .attr("id", "ocean")
+                .attr("d", geopath)
+                .attr("fill", "#5b757e");
+
+            svg.append("g")
+                .attr("id", "districts")
+                .selectAll("path")
+                .data(data[0].features)
+                .enter()
+                .append("path")
+                .attr("d", geopath)
+                .attr('border-color',"black")
+                .attr("fill", (d)=>{
+                    return colorScale(popDict[d.properties["Subzone Name"].toUpperCase()])
+                });
+                
+                
+        })
+
+        
+        
+    </script>
+
+
+
+
+</body>
+</html>
